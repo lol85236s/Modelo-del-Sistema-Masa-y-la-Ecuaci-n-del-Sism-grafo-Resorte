@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modelo Masa-Resorte: Ecuación del Sismógrafo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            svg: {
+                fontCache: 'global'
+            },
+            startup: {
+                ready: () => {
+                    MathJax.startup.defaultReady();
+                    MathJax.startup.promise.then(() => {
+                        // console.log('MathJax initial typesetting complete');
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.7; /* Increased for better readability */
+            color: #374151; /* Tailwind gray-700 */
+            background-color: #f9fafb; /* Tailwind gray-50 */
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px; /* Increased padding */
+        }
+        h1, h2, h3 {
+            font-weight: 600;
+            color: #111827; /* Tailwind gray-900 */
+        }
+        h1 {
+            font-size: 2.5rem; /* Slightly larger */
+            font-weight: 700;
+            border-bottom: 1px solid #d1d5db; /* Tailwind gray-300 */
+            padding-bottom: 0.75rem;
+            margin-bottom: 2rem; /* Increased margin */
+            color: #1d4ed8; /* Tailwind blue-700 */
+        }
+        h2 {
+            font-size: 1.75rem; /* Adjusted size */
+            margin-top: 2.5rem; /* Increased margin */
+            margin-bottom: 1.25rem; /* Increased margin */
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e5e7eb; /* Tailwind gray-200 */
+            color: #2563eb; /* Tailwind blue-600 */
+        }
+        h3 {
+            font-size: 1.375rem; /* Adjusted size */
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            color: #3b82f6; /* Tailwind blue-500 */
+        }
+        p {
+            margin-bottom: 1.25rem; /* Increased margin */
+            color: #4b5563; /* Tailwind gray-600 */
+        }
+        .equation {
+            display: block;
+            padding: 1.25rem; /* Increased padding */
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+            border: 1px solid #e5e7eb; /* Softer border */
+            border-radius: 0.375rem; /* Tailwind rounded-md */
+            margin-top: 1rem;
+            margin-bottom: 1.5rem; /* Increased margin */
+            overflow-x: auto;
+            font-size: 1.125rem; /* Tailwind text-lg */
+            box-shadow: 0 1px 3px 0 rgba(0,0,0,0.05);
+        }
+        .highlight { /* Subtle highlight for inline terms if needed, but MathJax should handle them */
+            color: #1e40af; /* Darker blue for emphasis */
+            font-weight: 500;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* Tailwind rounded-xl */
+            box-shadow: 0 4px 12px -1px rgba(0, 0, 0, 0.07), 0 2px 8px -1px rgba(0, 0, 0, 0.04); /* Softer shadow */
+            padding: 2rem; /* Increased padding */
+            margin-bottom: 2rem; /* Increased margin */
+        }
+        .footer {
+            text-align: center;
+            margin-top: 3.5rem; /* Increased margin */
+            padding-top: 2rem;
+            border-top: 1px solid #e5e7eb; /* Tailwind gray-200 */
+            color: #6b7280; /* Tailwind gray-500 */
+            font-size: 0.875rem; /* Tailwind text-sm */
+        }
+        ul.list-disc {
+            padding-left: 1.75rem; /* More indent for lists */
+        }
+        ul.list-disc li {
+            margin-bottom: 0.5rem;
+        }
+        .header-info {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1rem; /* Slightly larger font for better visibility */
+            color: #2c3e50; /* Darker gray for contrast */
+            background-color: #e0f2fe; /* Light blue background for emphasis */
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header-info p {
+            margin-bottom: 0.5rem;
+            font-weight: 500; /* Medium font weight */
+        }
+        .header-info ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            text-align: left; /* Align list items to the left within their centered container */
+        }
+        .header-info ul li {
+            margin-bottom: 0.35rem;
+            color: #1a56b9; /* A shade of blue for student names */
+            font-weight: 600; /* Bold student names */
+        }
+        .header-info p:last-of-type {
+            margin-bottom: 0; /* No bottom margin for the last paragraph */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header-info">
+            <p class="text-xl font-bold text-blue-800">Benemérita Universidad Autónoma de Puebla</p>
+            <p class="text-lg font-semibold text-blue-700">Colegio de Geofísica</p>
+            <p class="mt-6 text-base font-semibold">Alumnos:</p>
+            <ul class="text-base">
+                <li>Erik Flores Gómez</li>
+                <li>Sara Ivonne Ramos Ramos</li>
+                <li>Juan Antonio Ruiz García</li>
+                <li>Emilly Michell Saldaña Flores</li>
+                <li>Diego Ricardo Villegas Madrid</li>
+            </ul>
+            <p class="mt-6 text-base">Materia: Ecuaciones Diferenciales</p>
+            <p class="text-base">Prof: Ing. Julio César González Hernández</p>
+        </div>
+
+        <header class="text-center py-6">
+            <h1 class="text-4xl font-bold text-blue-700">Modelo del Sistema Masa-Resorte y la Ecuación del Sismógrafo</h1>
+            <p class="text-lg text-gray-600 mt-2">Análisis con Ecuaciones Diferenciales Lineales no Homogéneas de Coeficientes Constantes</p>
+        </header>
+
+        <main>
+            <section id="introduccion" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">1. Introducción al Sistema Masa-Resorte</h2>
+                <p>
+                    El sistema masa-resorte es un modelo fundamental en física e ingeniería para describir el comportamiento oscilatorio. Consiste en una masa $m$ unida a un resorte con constante de elasticidad $k$. Al desplazar la masa de su equilibrio, el resorte ejerce una fuerza restauradora, generando oscilaciones.
+                </p>
+                <p>
+                    Este modelo puede incluir fuerzas de amortiguamiento (coeficiente $c$) y fuerzas externas $F(t)$. Su comprensión es clave para diseñar estructuras, amortiguadores y sismógrafos.
+                </p>
+            </section>
+
+            <section id="ecuacion-homogenea" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">2. ¿Qué es una Ecuación Diferencial Lineal Homogénea de Coeficientes Constantes?</h2>
+                <p>
+                    Es una clase fundamental de **ecuaciones diferenciales ordinarias (EDOs)** que se caracteriza por una estructura algebraica particular.
+                </p>
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Definición Formal</h3>
+                <p>
+                    Una **ecuación diferencial lineal homogénea de coeficientes constantes** de orden $n$ es una ecuación que puede expresarse en la forma:
+                </p>
+                <div class="equation">
+                    $$ a_n \frac{d^n y}{dx^n} + a_{n-1} \frac{d^{n-1} y}{dx^{n-1}} + \dots + a_1 \frac{dy}{dx} + a_0 y = 0 $$
+                </div>
+                <p>donde:</p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>$y(x)$ es la **función desconocida** de la variable independiente $x$.</li>
+                    <li>$\frac{d^k y}{dx^k}$ denota la $k$-ésima derivada de $y$ con respecto a $x$.</li>
+                    <li>$a_n, a_{n-1}, \dots, a_1, a_0$ son **constantes reales** (o complejas, aunque comúnmente se abordan en el dominio real), con $a_n \neq 0$.</li>
+                    <li>El término derecho de la ecuación es cero, lo que confiere la propiedad de **homogeneidad**.</li>
+                </ul>
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Desglose de las Propiedades</h3>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-2">
+                    <li>
+                        **Linealidad:** La ecuación es lineal porque la función $y(x)$ y sus derivadas aparecen únicamente elevadas a la primera potencia y no están multiplicadas entre sí. Esto permite que el operador diferencial asociado sea un operador lineal. Si definimos el operador diferencial $L$ como:
+                        <div class="equation">
+                            $$ L = a_n \frac{d^n}{dx^n} + a_{n-1} \frac{d^{n-1}}{dx^{n-1}} + \dots + a_1 \frac{d}{dx} + a_0 $$
+                        </div>
+                        entonces la ecuación puede escribirse concisamente como $L(y) = 0$.
+                    </li>
+                    <li>
+                        **Homogeneidad:** La característica de homogeneidad se deriva del hecho de que el término independiente de la ecuación es idénticamente cero. Si el lado derecho fuera una función no nula de $x$, la ecuación sería una ecuación diferencial lineal no homogénea.
+                    </li>
+                    <li>
+                        **Coeficientes Constantes:** Todos los coeficientes $a_k$ son números fijos, independientes de la variable $x$. Esto contrasta con las ecuaciones diferenciales de coeficientes variables, donde los coeficientes son funciones de $x$. Esta propiedad simplifica enormemente el método de resolución.
+                    </li>
+                </ul>
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Método de Resolución</h3>
+                <p>
+                    El método estándar para resolver este tipo de ecuaciones se basa en la búsqueda de soluciones de la forma exponencial. Dada la linealidad y homogeneidad, se postula una solución particular $y(x) = e^{rx}$, donde $r$ es una constante. Sustituyendo esta forma en la ecuación diferencial:
+                </p>
+                <div class="equation">
+                    $$ a_n (r^n e^{rx}) + a_{n-1} (r^{n-1} e^{rx}) + \dots + a_1 (r e^{rx}) + a_0 (e^{rx}) = 0 $$
+                </div>
+                <p>
+                    Factorizando $e^{rx}$ (que nunca es cero), obtenemos la **ecuación característica** (o auxiliar):
+                </p>
+                <div class="equation">
+                    $$ a_n r^n + a_{n-1} r^{n-1} + \dots + a_1 r + a_0 = 0 $$
+                </div>
+                <p>
+                    Esta es una ecuación polinómica de grado $n$ en $r$. Las raíces de esta ecuación polinómica, denotadas como $r_1, r_2, \dots, r_n$, determinan la forma de la solución general de la ecuación diferencial. La naturaleza de estas raíces (reales distintas, reales repetidas, o complejas conjugadas) dictará los términos constitutivos de la solución general.
+                </p>
+                <p>Por ejemplo:</p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>Si $r_1$ es una raíz real distinta, $e^{r_1 x}$ es una solución.</li>
+                    <li>Si $r_1$ es una raíz real de multiplicidad $m$, entonces $e^{r_1 x}$, $xe^{r_1 x}$, $\dots$, $x^{m-1}e^{r_1 x}$ son soluciones linealmente independientes.</li>
+                    <li>Si $r = \alpha \pm i\beta$ son raíces complejas conjugadas, entonces $e^{\alpha x}\cos(\beta x)$ y $e^{\alpha x}\sin(\beta x)$ son soluciones linealmente independientes.</li>
+                </ul>
+                <p>
+                    La solución general es una combinación lineal de las $n$ soluciones linealmente independientes obtenidas a partir de las raíces de la ecuación característica.
+                </p>
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Relevancia</h3>
+                <p>
+                    Las ecuaciones diferenciales lineales homogéneas de coeficientes constantes modelan una vasta gama de fenómenos en la física, la ingeniería y otras ciencias. Ejemplos incluyen el movimiento armónico simple, circuitos RLC, sistemas de amortiguación, y fenómenos de decaimiento radioactivo, entre otros. Su estudio es un pilar fundamental en el análisis de sistemas dinámicos lineales.
+                </p>
+            </section>
+
+            <section id="ecuacion-diferencial" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">3. La Ecuación Diferencial del Movimiento</h2>
+                <p>
+                    Aplicando la segunda ley de Newton ($\sum F = ma$) al sistema, obtenemos:
+                </p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>Fuerza del resorte (Ley de Hooke): $F_s = -kx$.</li>
+                    <li>Fuerza de amortiguamiento: $F_d = -c \frac{dx}{dt}$.</li>
+                    <li>Fuerza externa: $F(t)$.</li>
+                </ul>
+                <p>
+                    La suma es $m \frac{d^2x}{dt^2}$:
+                </p>
+                <div class="equation">
+                    $$ m \frac{d^2x}{dt^2} + c \frac{dx}{dt} + kx = F(t) $$
+                </div>
+                <p>
+                    Esta es una ecuación diferencial lineal de segundo orden, no homogénea, con coeficientes constantes.
+                </p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>$m$: masa (kg)</li>
+                    <li>$c$: coeficiente de amortiguamiento (N·s/m)</li>
+                    <li>$k$: constante del resorte (N/m)</li>
+                    <li>$x(t)$: desplazamiento (m)</li>
+                    <li>$F(t)$: fuerza externa (N)</li>
+                </ul>
+            </section>
+
+            <section id="sismografo" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">4. La Ecuación del Sismógrafo</h2>
+                <p>
+                    Un sismógrafo detecta vibraciones del suelo. Imaginemos una masa suspendida por un resorte desde un armazón fijo al suelo. Si $y(t)$ es el desplazamiento del suelo y $x(t)$ el de la masa (inercial), el resorte se alarga $(x(t) - y(t))$.
+                </p>
+                <div class="equation">
+                    $$ m \frac{d^2x}{dt^2} + c \frac{dx}{dt} + k(x-y) = 0 $$
+                </div>
+                <p>Reordenando:</p>
+                <div class="equation">
+                    $$ m \frac{d^2x}{dt^2} + c \frac{dx}{dt} + kx = ky(t) $$
+                </div>
+                <p>
+                    Sea $u(t) = x(t) - y(t)$ el desplazamiento relativo de la masa respecto al armazón. Entonces $x(t) = u(t) + y(t)$. Sustituyendo:
+                </p>
+                <div class="equation">
+                    $$ m \left(\frac{d^2u}{dt^2} + \frac{d^2y}{dt^2}\right) + c \left(\frac{du}{dt} + \frac{dy}{dt}\right) + ku = 0 $$
+                </div>
+                <p>
+                    La ecuación del sismógrafo en términos del desplazamiento relativo $u(t)$ es:
+                </p>
+                <div class="equation">
+                    $$ m \frac{d^2u}{dt^2} + c \frac{du}{dt} + ku = -m \frac{d^2y}{dt^2} $$
+                </div>
+                <p>
+                    El término $-m \frac{d^2y}{dt^2}$ es la "fuerza" impulsora, proporcional a la aceleración del suelo. El sismógrafo registra $u(t)$.
+                </p>
+            </section>
+
+            <section id="solucion-ecuacion" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">5. Solución de la Ecuación Diferencial</h2>
+                <p>
+                    La solución general $x(t)$ (o $u(t)$) es la suma de la solución homogénea $x_h(t)$ (o $u_h(t)$) y una solución particular $x_p(t)$ (o $u_p(t)$):
+                </p>
+                <div class="equation">
+                    $$ x(t) = x_h(t) + x_p(t) $$
+                </div>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">5.1. Solución Homogénea ($x_h(t)$)</h3>
+                <p>
+                    Se resuelve la ecuación homogénea asociada: $m \frac{d^2x_h}{dt^2} + c \frac{dx_h}{dt} + kx_h = 0$.
+                    La ecuación característica es: $mr^2 + cr + k = 0$.
+                    Las raíces $r_1, r_2$ determinan la respuesta transitoria:
+                </p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-2">
+                    <li><strong>Amortiguamiento Supercrítico ($c^2 - 4mk > 0$):</strong> Raíces reales $r_1, r_2 < 0$.
+                        <span class="equation">$$ x_h(t) = C_1 e^{r_1 t} + C_2 e^{r_2 t} $$</span>
+                        Regreso al equilibrio sin oscilar.
+                    </li>
+                    <li><strong>Amortiguamiento Crítico ($c^2 - 4mk = 0$):</strong> Raíz real repetida $r = -c/2m$.
+                        <span class="equation">$$ x_h(t) = (C_1 + C_2 t) e^{rt} $$</span>
+                        Regreso rápido sin oscilación (ideal en sismógrafos).
+                    </li>
+                    <li><strong>Amortiguamiento Subcrítico ($c^2 - 4mk < 0$):</strong> Raíces complejas $r = \alpha \pm i\omega_d$.
+                        <span class="equation">$$ x_h(t) = e^{\alpha t} (C_1 \cos(\omega_d t) + C_2 \sin(\omega_d t)) $$</span>
+                        donde $\alpha = -c/2m$ y $\omega_d = \frac{\sqrt{4mk - c^2}}{2m}$ (frecuencia natural amortiguada). Oscilación con amplitud decreciente.
+                    </li>
+                </ul>
+                <p>$C_1, C_2$ son constantes de condiciones iniciales.</p>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">5.2. Solución Particular ($x_p(t)$)</h3>
+                <p>
+                    Depende de $F(t)$ (o $-m \frac{d^2y}{dt^2}$). Representa la respuesta de estado estacionario.
+                    Métodos comunes: Coeficientes Indeterminados (para $F(t)$ simples) o Variación de Parámetros (general).
+                </p>
+                <p>
+                    Si $\frac{d^2y}{dt^2} = A_0 \cos(\omega t)$, entonces $F_{eff}(t) = -m A_0 \cos(\omega t)$. Se buscaría $x_p(t) = A \cos(\omega t) + B \sin(\omega t)$.
+                </p>
+            </section>
+
+            <section id="interpretacion" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">6. Interpretación y Aplicaciones del Sismógrafo</h2>
+                <p>
+                    La ecuación $m \frac{d^2u}{dt^2} + c \frac{du}{dt} + ku = -m \frac{d^2y}{dt^2}$ permite entender la respuesta del sismógrafo:
+                </p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>
+                        <strong>Respuesta Transitoria vs. Estado Estacionario:</strong> $u_h(t)$ se desvanece; $u_p(t)$ es la respuesta sostenida. Se busca amortiguamiento cercano al crítico.
+                    </li>
+                    <li>
+                        <strong>Frecuencia Natural y Resonancia:</strong> $\omega_0 = \sqrt{k/m}$. Si la frecuencia sísmica $\omega \approx \omega_0$, la amplitud de $u(t)$ puede ser grande. Se evita o se amortigua fuertemente.
+                    </li>
+                    <li>
+                        <strong>Amortiguamiento ($c$):</strong> Crucial. Subamortiguado (oscilaciones largas), superamortiguado (respuesta lenta), crítico (retorno rápido, ideal).
+                    </li>
+                    <li>
+                        <strong>Sensibilidad:</strong> Mejor con masa $m$ grande y/o constante $k$ pequeña.
+                    </li>
+                </ul>
+                <p>
+                    Los sismógrafos modernos usan estos principios con sensores avanzados para analizar terremotos.
+                </p>
+            </section>
+
+            <section id="friccion-masa-resorte" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">7. Fricción en el Sistema Masa-Resorte: Tipos de Amortiguamiento</h2>
+                <p>
+                    La descripción del comportamiento de un oscilador amortiguado es fundamental para entender sistemas físicos y de ingeniería. Se modela mediante una ecuación diferencial ordinaria lineal de segundo orden con coeficientes constantes. La clave para entender los diferentes tipos de amortiguamiento radica en el discriminante del polinomio característico de esta ecuación.
+                </p>
+
+                <p>
+                    La ecuación general de un oscilador amortiguado (como un sistema masa-resorte con fricción lineal) es:
+                </p>
+                <div class="equation">
+                    $$ m\frac{d^{2}x(t)}{dt^{2}}+c\frac{dx(t)}{dt}+k~x(t)=0 $$
+                </div>
+                <p>donde:</p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>$m$ es la masa.</li>
+                    <li>$c$ es el coeficiente de amortiguamiento (o fricción viscosa).</li>
+                    <li>$k$ es la constante de elasticidad del resorte.</li>
+                    <li>$x(t)$ es el desplazamiento desde la posición de equilibrio en el tiempo $t$.</li>
+                </ul>
+                <p>
+                    Para resolver esta ecuación, se propone una solución de la forma $x(t) = e^{rt}$, que al sustituirla en la ecuación, lleva al polinomio característico:
+                </p>
+                <div class="equation">
+                    $$ mr^2 + cr + k = 0 $$
+                </div>
+                <p>Las raíces de este polinomio son:</p>
+                <div class="equation">
+                    $$ r = \frac{-c \pm \sqrt{c^2 - 4mk}}{2m} $$
+                </div>
+                <p>
+                    El término bajo la raíz cuadrada, $c^2 - 4mk$, es el **discriminante**, y su signo determina la naturaleza de las raíces y, por lo tanto, el tipo de amortiguamiento.
+                </p>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">7.1. Movimiento Subamortiguado</h3>
+                <p><strong>Condición:</strong> $c^2 - 4mk < 0$</p>
+                <p><strong>Análisis de las Raíces:</strong></p>
+                <p>
+                    Cuando el discriminante es negativo, las raíces del polinomio característico son complejas conjugadas. Se pueden expresar como:
+                </p>
+                <div class="equation">
+                    $$ r = \frac{-c}{2m} \pm i\frac{\sqrt{4mk - c^2}}{2m} = -\alpha \pm i\omega_d $$
+                </div>
+                <p>donde:</p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>$\alpha = \frac{c}{2m}$ es el **factor de amortiguamiento**, que determina la tasa de decaimiento exponencial.</li>
+                    <li>$\omega_d = \frac{\sqrt{4mk - c^2}}{2m}$ es la **frecuencia angular de oscilación amortiguada**. Nótese que $\omega_d < \omega_n = \sqrt{k/m}$ (la frecuencia natural sin amortiguar).</li>
+                </ul>
+                <p><strong>Solución de la Ecuación Diferencial:</strong></p>
+                <p>
+                    La solución general para el movimiento subamortiguado es una oscilación sinusoidal cuya amplitud decae exponencialmente con el tiempo:
+                </p>
+                <div class="equation">
+                    $$ x(t) = e^{-\alpha t}(C_1 \cos(\omega_d t) + C_2 \sin(\omega_d t)) $$
+                </div>
+                <p>
+                    Esta solución también se puede expresar en la forma de amplitud y fase:
+                </p>
+                <div class="equation">
+                    $$ x(t) = A e^{-\alpha t} \sin(\omega_d t + \phi) $$
+                </div>
+                <p>donde $A$ es la amplitud inicial y $\phi$ es la fase inicial, determinadas por las condiciones iniciales.</p>
+                <p><strong>Características del Movimiento:</strong></p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>El sistema oscila alrededor de la posición de equilibrio.</li>
+                    <li>La amplitud de las oscilaciones disminuye gradualmente con el tiempo debido al término exponencial $e^{-\alpha t}$.</li>
+                    <li>Las oscilaciones eventualmente se detienen a medida que el sistema se acerca al equilibrio.</li>
+                    <li>La frecuencia de oscilación ($\omega_d$) es menor que la frecuencia natural del sistema sin amortiguar ($\omega_n$).</li>
+                </ul>
+                <p><strong>Comunes en un sismógrafo:</strong></p>
+                <p>
+                    El movimiento **subamortiguado** es el más común y deseable en un sismógrafo. Un sismógrafo está diseñado para detectar y registrar pequeñas vibraciones del terreno (ondas sísmicas). Si fuera sobreamortiguado, respondería muy lentamente a los temblores y no registraría las oscilaciones reales de la tierra. Si fuera críticamente amortiguado, aunque retornaría al equilibrio rápidamente, podría no capturar la duración completa y la naturaleza oscilatoria de un terremoto. El diseño subamortiguado permite que el sismógrafo oscile y registre las vibraciones del suelo, pero con suficiente amortiguamiento para que las oscilaciones propias del instrumento decaigan rápidamente después de que el temblor cese, evitando que el instrumento siga vibrando y falsee lecturas futuras. Esto asegura que el registro sea una representación fiel de la actividad sísmica.
+                </p>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">7.2. Movimiento Sobreamortiguado</h3>
+                <p><strong>Condición:</strong> $c^2 - 4mk > 0$</p>
+                <p><strong>Análisis de las Raíces:</strong></p>
+                <p>
+                    Cuando el discriminante es positivo, las raíces del polinomio característico son reales y distintas. Se denotan como $r_1$ y $r_2$:
+                </p>
+                <div class="equation">
+                    $$ r_1 = \frac{-c + \sqrt{c^2 - 4mk}}{2m} $$
+                </div>
+                <div class="equation">
+                    $$ r_2 = \frac{-c - \sqrt{c^2 - 4mk}}{2m} $$
+                </div>
+                <p>Ambas raíces son negativas.</p>
+                <p><strong>Solución de la Ecuación Diferencial:</strong></p>
+                <p>
+                    La solución general para el movimiento sobreamortiguado es una combinación lineal de dos exponenciales reales negativas:
+                </p>
+                <div class="equation">
+                    $$ x(t) = C_1 e^{r_1 t} + C_2 e^{r_2 t} $$
+                </div>
+                <p>donde $C_1$ y $C_2$ se determinan por las condiciones iniciales.</p>
+                <p><strong>Características del Movimiento:</strong></p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>El sistema no oscila. Regresa a la posición de equilibrio de forma suave y lenta.</li>
+                    <li>La velocidad de retorno al equilibrio es relativamente lenta debido al exceso de amortiguamiento.</li>
+                    <li>Puede pasar por la posición de equilibrio a lo sumo una vez (si se le da una velocidad inicial considerable en la dirección opuesta al equilibrio).</li>
+                    <li>Es el caso con el mayor nivel de amortiguamiento sin oscilación.</li>
+                </ul>
+                <p><strong>Comunes en un sismógrafo:</strong></p>
+                <p>
+                    El movimiento **sobreamortiguado** no es común ni deseable en un sismógrafo. Si un sismógrafo fuera sobreamortiguado, su aguja o sensor se movería muy lentamente en respuesta a las vibraciones del suelo. Esto significaría que el instrumento no podría seguir las rápidas oscilaciones de un terremoto, y el registro resultante sería una versión muy suavizada y subrepresentada del evento real. Para medir la actividad sísmica, se necesita un sistema que sea sensible a las variaciones rápidas, lo cual el amortiguamiento excesivo impide.
+                </p>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">7.3. Movimiento Críticamente Amortiguado</h3>
+                <p><strong>Condición:</strong> $c^2 - 4mk = 0$</p>
+                <p><strong>Análisis de las Raíces:</strong></p>
+                <p>
+                    Cuando el discriminante es cero, el polinomio característico tiene una única raíz real y repetida:
+                </p>
+                <div class="equation">
+                    $$ r = \frac{-c}{2m} = -\alpha $$
+                </div>
+                <p><strong>Solución de la Ecuación Diferencial:</strong></p>
+                <p>
+                    La solución general para el movimiento críticamente amortiguado es una combinación de una exponencial simple y una exponencial multiplicada por $t$:
+                </p>
+                <div class="equation">
+                    $$ x(t) = (C_1 + C_2 t)e^{-\alpha t} $$
+                </div>
+                <p>donde $C_1$ y $C_2$ se determinan por las condiciones iniciales.</p>
+                <p><strong>Características del Movimiento:</strong></p>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>El sistema no oscila. Regresa a la posición de equilibrio lo más rápidamente posible sin sobrepasar el equilibrio.</li>
+                    <li>Este es el retorno más rápido al equilibrio sin oscilación. Es el punto de transición entre el movimiento oscilatorio (subamortiguado) y el movimiento sin oscilaciones más lento (sobreamortiguado).</li>
+                    <li>Al igual que en el caso sobreamortiguado, puede pasar por la posición de equilibrio a lo sumo una vez.</li>
+                </ul>
+                <p><strong>Comunes en un sismógrafo:</strong></p>
+                <p>
+                    El movimiento **críticamente amortiguado** tampoco es el más común en sismógrafos, pero podría ser un diseño aceptable en ciertos contextos si el subamortiguamiento no es posible. En teoría, un sistema críticamente amortiguado ofrece el retorno más rápido al equilibrio sin oscilar, lo cual es ventajoso para que el instrumento esté listo para la siguiente lectura rápidamente. Sin embargo, para capturar la naturaleza oscilatoria de las ondas sísmicas con precisión, una ligera subamortiguación es a menudo preferible. Si un sismógrafo fuera críticamente amortiguado, podría no registrar completamente la amplitud máxima de las oscilaciones o la duración de los eventos sísmicos de una manera tan rica como un sistema subamortiguado bien diseñado. No obstante, en otras aplicaciones donde se busca un retorno rápido al equilibrio sin oscilaciones, como en puertas de cierre automático, amortiguadores de automóviles o circuitos eléctricos para evitar sobrecargas, el amortiguamiento crítico es muy deseable.
+                </p>
+            </section>
+
+            <section id="ejercicio-sismografo" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">8. Ejercicio: Sismógrafo Vertical de Masa-Resorte</h2>
+                <p>
+                    Un sismógrafo vertical está diseñado para medir el movimiento vertical del suelo durante un sismo. Consiste en una masa $m = 1.5 \, \text{kg}$ suspendida de un resorte con constante de elasticidad $k = 100 \, \text{N/m}$. El sistema incluye un amortiguador viscoso con coeficiente de amortiguamiento $c = 6 \, \text{N·s/m}$, ajustado para un comportamiento subcrítico que permita registrar las ondas sísmicas con precisión. El sismo produce un desplazamiento vertical del suelo modelado como una onda armónica simplificada $y(t) = 0.005 \sin(10t) \, \text{m}$, donde $y(t)$ representa el desplazamiento del suelo respecto a un marco de referencia inercial.
+                </p>
+                <p>
+                    La ecuación diferencial que describe el movimiento relativo de la masa $x(t)$ (desplazamiento de la masa respecto al marco del sismógrafo) en un sistema vertical es:
+                </p>
+                <div class="equation">
+                    $$ m \ddot{x} + c \dot{x} + k x = -m \ddot{y} $$
+                </div>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Datos:</h3>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>Masa: $m = 1.5 \, \text{kg}$</li>
+                    <li>Constante del resorte: $k = 100 \, \text{N/m}$</li>
+                    <li>Coeficiente de amortiguamiento: $c = 6 \, \text{N·s/m}$</li>
+                    <li>Desplazamiento del suelo: $y(t) = 0.005 \sin(10t) \, \text{m}$</li>
+                    <li>Aceleración gravitacional: $g = 9.81 \, \text{m/s}^2$ (considerada en el equilibrio estático inicial, pero no afecta la ecuación relativa).</li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Preguntas:</h3>
+                <ol class="list-decimal list-inside mb-4 pl-4 space-y-1">
+                    <li>Escribe la ecuación diferencial completa que describe el movimiento de la masa $x(t)$.</li>
+                    <li>Calcula la frecuencia natural del sistema ($\omega_n$) y el factor de amortiguamiento ($\zeta$).</li>
+                    <li>Determina si el sistema es subcrítico, crítico o sobreamortiguado.</li>
+                    <li>Encuentra la solución particular $x_p(t)$ para el movimiento forzado en estado estacionario.</li>
+                    <li>Explica cómo el diseño vertical y el amortiguamiento afectan la capacidad del sismógrafo para registrar ondas sísmicas de baja frecuencia (como las ondas P o S de un sismo).</li>
+                </ol>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Solución paso a paso:</h3>
+
+                <h4 class="text-lg font-medium text-gray-700 mt-4 mb-2">1. Ecuación diferencial:</h4>
+                <p>
+                    La ecuación diferencial para el sistema masa-resorte vertical con amortiguamiento, considerando el movimiento relativo $x(t)$, es:
+                </p>
+                <div class="equation">
+                    $$ m \ddot{x} + c \dot{x} + k x = -m \ddot{y} $$
+                </div>
+                <p>
+                    Calculamos la segunda derivada del desplazamiento del suelo:
+                </p>
+                <div class="equation">
+                    $$ y(t) = 0.005 \sin(10t) $$
+                </div>
+                <div class="equation">
+                    $$ \dot{y}(t) = 0.005 \cdot 10 \cos(10t) = 0.05 \cos(10t) $$
+                </div>
+                <div class="equation">
+                    $$ \ddot{y}(t) = 0.05 \cdot (-10) \sin(10t) = -0.5 \sin(10t) $$
+                </div>
+                <p>
+                    Sustituyendo los valores de $m$, $c$, $k$, y $\ddot{y}(t)$:
+                </p>
+                <div class="equation">
+                    $$ 1.5 \ddot{x} + 6 \dot{x} + 100 x = -1.5 \cdot (-0.5 \sin(10t)) = 0.75 \sin(10t) $$
+                </div>
+                <p>
+                    La ecuación diferencial completa es:
+                </p>
+                <div class="equation">
+                    $$ 1.5 \ddot{x} + 6 \dot{x} + 100 x = 0.75 \sin(10t) $$
+                </div>
+
+                <h4 class="text-lg font-medium text-gray-700 mt-4 mb-2">2. Frecuencia natural y factor de amortiguamiento:</h4>
+                <p>
+                    La frecuencia natural $\omega_n$ es:
+                </p>
+                <div class="equation">
+                    $$ \omega_n = \sqrt{\frac{k}{m}} = \sqrt{\frac{100}{1.5}} = \sqrt{\frac{100}{1.5}} \approx \sqrt{66.667} \approx 8.165 \, \text{rad/s} $$
+                </div>
+                <p>
+                    El factor de amortiguamiento $\zeta$ se calcula como:
+                </p>
+                <div class="equation">
+                    $$ \zeta = \frac{c}{2\sqrt{mk}} = \frac{6}{2\sqrt{1.5 \cdot 100}} = \frac{6}{2 \cdot 12.247} \approx \frac{6}{24.494} \approx 0.245 $$
+                </div>
+
+                <h4 class="text-lg font-medium text-gray-700 mt-4 mb-2">3. Clasificación del amortiguamiento:</h4>
+                <p>
+                    Como $\zeta \approx 0.245 < 1$, el sistema es **subcrítico** (subamortiguado). Esto es típico en sismógrafos, ya que permite registrar las vibraciones del suelo con suficiente sensibilidad, mientras el amortiguamiento evita oscilaciones excesivas que distorsionarían la señal.
+                </p>
+
+                <h4 class="text-lg font-medium text-gray-700 mt-4 mb-2">4. Solución particular:</h4>
+                <p>
+                    Para encontrar la solución particular $x_p(t)$ en estado estacionario, asumimos una solución de la forma:
+                </p>
+                <div class="equation">
+                    $$ x_p(t) = A \sin(10t) + B \cos(10t) $$
+                </div>
+                <p>
+                    Calculamos las derivadas:
+                </p>
+                <div class="equation">
+                    $$ \dot{x}_p(t) = 10A \cos(10t) - 10B \sin(10t) $$
+                </div>
+                <div class="equation">
+                    $$ \ddot{x}_p(t) = -100A \sin(10t) - 100B \cos(10t) $$
+                </div>
+                <p>
+                    Sustituyendo en la ecuación diferencial:
+                </p>
+                <div class="equation">
+                    $$ 1.5 \left( -100A \sin(10t) - 100B \cos(10t) \right) + 6 \left( 10A \cos(10t) - 10B \sin(10t) \right) + 100 \left( A \sin(10t) + B \cos(10t) \right) = 0.75 \sin(10t) $$
+                </div>
+                <p>
+                    Agrupamos términos:
+                </p>
+                <h5 class="text-md font-medium text-gray-600 mt-3 mb-1">Términos con $\sin(10t)$:</h5>
+                <div class="equation">
+                    $$ (-150A - 60B + 100A) \sin(10t) = (-50A - 60B) \sin(10t) = 0.75 $$
+                </div>
+                <div class="equation">
+                    $$ -50A - 60B = 0.75 \quad (1) $$
+                </div>
+                <h5 class="text-md font-medium text-gray-600 mt-3 mb-1">Términos con $\cos(10t)$:</h5>
+                <div class="equation">
+                    $$ (-150B + 60A + 100B) \cos(10t) = (60A - 50B) \cos(10t) = 0 $$
+                </div>
+                <div class="equation">
+                    $$ 60A - 50B = 0 \quad (2) $$
+                </div>
+                <p>
+                    Resolvemos el sistema de ecuaciones. De la ecuación (2):
+                </p>
+                <div class="equation">
+                    $$ 60A = 50B \implies B = \frac{60}{50}A = 1.2A $$
+                </div>
+                <p>
+                    Sustituyendo $B = 1.2A$ en la ecuación (1):
+                </p>
+                <div class="equation">
+                    $$ -50A - 60(1.2A) = 0.75 $$
+                </div>
+                <div class="equation">
+                    $$ -50A - 72A = -122A = 0.75 $$
+                </div>
+                <div class="equation">
+                    $$ A = \frac{0.75}{-122} \approx -0.0061475 \, \text{m} $$
+                </div>
+                <div class="equation">
+                    $$ B = 1.2 \cdot (-0.0061475) \approx -0.007377 \, \text{m} $$
+                </div>
+                <p>
+                    La solución particular es:
+                </p>
+                <div class="equation">
+                    $$ x_p(t) \approx -0.00615 \sin(10t) - 0.00738 \cos(10t) \, \text{m} $$
+                </div>
+                <p>
+                    Para obtener la amplitud total, calculamos:
+                </p>
+                <div class="equation">
+                    $$ A_{\text{total}} = \sqrt{A^2 + B^2} = \sqrt{(-0.00615)^2 + (-0.00738)^2} \approx \sqrt{0.00003783 + 0.00005446} \approx \sqrt{0.00009229} \approx 0.00961 \, \text{m} $$
+                </div>
+                <p>
+                    Esto indica que la masa oscila con una amplitud de aproximadamente $9.61 \, \text{mm}$, lo cual es razonable para un sismógrafo sensible a pequeños movimientos sísmicos.
+                </p>
+
+                <h4 class="text-lg font-medium text-gray-700 mt-4 mb-2">5. Efecto del diseño vertical y el amortiguamiento:</h4>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>
+                        <strong>Diseño vertical</strong>: En un sismógrafo vertical, el resorte soporta el peso de la masa en equilibrio estático ($kx_0 = mg$), pero este desplazamiento estático no afecta la ecuación diferencial relativa, ya que $x(t)$ mide el desplazamiento respecto a la posición de equilibrio. El diseño vertical es ideal para registrar ondas sísmicas verticales, como las ondas P (primarias), que son compresionales y producen movimientos verticales significativos. Sin embargo, para ondas de baja frecuencia (por ejemplo, ondas S o superficiales con períodos de 10-20 segundos, es decir, $\omega \approx 0.3-0.6 \, \text{rad/s}$), la frecuencia natural del sismógrafo ($\omega_n \approx 8.165 \, \text{rad/s}$) puede ser demasiado alta, lo que reduce la sensibilidad. Para mejorar la respuesta a bajas frecuencias, se utilizan resortes más débiles (menor $k$) o sistemas electrónicos de retroalimentación en sismógrafos modernos.
+                    </li>
+                    <li>
+                        <strong>Amortiguamiento</strong>: El factor de amortiguamiento $\zeta \approx 0.245$ asegura que el sistema sea subcrítico, lo que permite registrar las ondas sísmicas con una distorsión mínima. Un amortiguamiento cercano a $\zeta \approx 0.7$ (típico en sismógrafos) maximiza la sensibilidad a un rango amplio de frecuencias, pero en este caso, $\zeta = 0.245$ es adecuado para ondas de mayor frecuencia (como las del ejemplo, con $\omega = 10 \, \text{rad/s} \approx 1.59 \, \text{Hz}$). Para ondas de baja frecuencia, un amortiguamiento más cercano al crítico podría ser necesario para evitar oscilaciones resonantes que enmascaren la señal sísmica.
+                    </li>
+                </ul>
+
+                <h3 class="text-xl font-semibold text-blue-500 mt-6 mb-3">Realismo del ejercicio:</h3>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>
+                        <strong>Parámetros</strong>: La masa ($1.5 \, \text{kg}$), la constante del resorte ($k = 100 \, \text{N/m}$), y el amortiguamiento ($c = 6 \, \text{N·s/m}$) son valores realistas para un sismógrafo portátil o de laboratorio. Los sismógrafos modernos suelen tener frecuencias naturales ajustadas entre 0.1 y 10 Hz, y este sistema tiene una frecuencia natural de $\omega_n / (2\pi) \approx 1.3 \, \text{Hz}$, adecuada para detectar ondas sísmicas de alta frecuencia.
+                    </li>
+                    <li>
+                        <strong>Desplazamiento del suelo</strong>: El desplazamiento $y(t) = 0.005 \sin(10t) \, \text{m}$ (amplitud de 5 mm y frecuencia de $10 / (2\pi) \approx 1.59 \, \text{Hz}$) es representativo de un sismo de magnitud moderada a una distancia intermedia, donde las amplitudes verticales suelen estar en el rango de milímetros.
+                    </li>
+                    <li>
+                        <strong>Aplicación vertical</strong>: El diseño vertical es común en sismógrafos para medir componentes verticales de las ondas sísmicas (especialmente ondas P). En la práctica, los sismógrafos modernos combinan sensores verticales y horizontales para capturar el movimiento completo del suelo.
+                    </li>
+                </ul>
+            </section>
+
+            <section id="conclusion" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">9. Conclusión</h2>
+                <p>
+                    El modelo masa-resorte, con su ecuación diferencial, es clave para entender vibraciones y diseñar sismógrafos. La ecuación del sismógrafo permite optimizar su diseño para registros precisos, vitales en sismología.
+                </p>
+            </section>
+
+            <section id="referencias" class="card">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">10. Referencias</h2>
+                <ul class="list-disc list-inside mb-4 pl-4 space-y-1">
+                    <li>Alonso, M., & Finn, E. J. (1976). Física: Volumen I, Mecánica. Fondo Educativo Interamericano.</li>
+                    <li>Boyce, W. E., & DiPrima, R. C. (2001). Elementary differential equations and boundary value problems. John Wiley & Sons.</li>
+                    <li>Farlow, S. J. (1994). An introduction to differential equations and their applications. Dover Publ. Inc.</li>
+                    <li>Pérez Rodríguez, S. (s.f.). TEMA 5.- Modelos en Ecuaciones Diferenciales Ordinarias Lineales. El Oscilador Armónico. [Material de curso].</li>
+                </ul>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2024 Modelo Matemático Interactivo. Todos los derechos reservados.</p>
+            <p>Generado con fines educativos.</p>
+        </footer>
+    </div>
+    <script>
+        // Forzamos un re-renderizado de MathJax cuando el DOM esté completamente cargado.
+        // Esto puede ayudar si hay problemas de temporización con la carga asíncrona.
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof MathJax !== 'undefined' && typeof MathJax.typeset === 'function') {
+                // console.log('Retypesetting with MathJax on DOMContentLoaded.');
+                MathJax.typeset();
+            }
+        });
+    </script>
+</body>
+</html>
